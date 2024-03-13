@@ -21,7 +21,7 @@
 
 'use strict';
 
-const applicationServerPublicKey = '<Your Public Key>';
+const applicationServerPublicKey = 'BCTJfJX9Q0mK7FAvGsTjfHdeODtmctaZrbk5HvmG4Jmd-6BWGkBkYceZ-ZnsH4qoECIvG5gV0dKtBq_Bfpb0Itc';
 
 const pushButton = document.querySelector('.js-push-btn');
 
@@ -42,3 +42,99 @@ function urlB64ToUint8Array(base64String) {
   }
   return outputArray;
 }
+
+function initUI() {
+  pushButton.addEventListener("click", () => {
+    pushButton.disabled = true;
+    if(isSubscribed) {
+      //TODO: Unsubscribe
+    } else {
+      subscribeUser();
+    }
+  })
+
+  // Set the initial subscription value
+  swRegistration.pushManager.getSubscription()
+  .then((subscription) => {
+    isSubscribed = !(subscription === null);
+
+    if(isSubscribed) {
+      console.log("User is subscribed");
+    } else {
+      console.log("User is NOT subscribed");
+    }
+
+    updateButton();
+  })
+}
+
+function updateButton() {
+  if(Notification.permission === "denied") {
+    pushButton.textContent = "Push Messaging Blocked";
+    pushButton.disabled = true;
+    updateSubscriptionOnServer(null);
+    return;
+  }
+
+  if(isSubscribed) {
+    pushButton.textContent = "Disable Push Messaging";
+  } else {
+    pushButton.textContent = "Enable Push Messaging";
+  }
+
+  pushButton.disabled = false;
+}
+
+function subscribeUser() {
+  const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
+  swRegistration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: applicationServerKey
+  })
+  .then((subscription) => {
+    console.log("User is subscribed!");
+
+    updateSubscriptionOnServer(subscription);
+
+    isSubscribed = true;
+
+    updateButton();
+  })
+  .catch((err) => {
+    console.log("Failed to subscribe the user: ", err);
+    updateButton();
+  })
+}
+
+function updateSubscriptionOnServer(subscription) {
+  //I en riktig app, skicka subscription till backend
+  const subscriptionJson = document.querySelector(".js-subscription-json");
+  const subscriptionDetails = document.querySelector(".js-subscription-details");
+
+  if(subscription) {
+    subscriptionJson.textContent = JSON.stringify(subscription);
+    subscriptionDetails.classList.remove("is-invisible");
+  } else {
+    subscriptionDetails.classList.add("is-invisible");
+  }
+}
+
+  if("serviceWorker" in navigator && "PushManager" in window) {
+    console.log("Service Worker and Push  are supported!");
+
+    navigator.serviceWorker.register("sw.js")
+    .then((swReg) => {
+      console.log("Serive worker is registered", swReg);
+
+      swRegistration = swReg;
+      initUI();
+    })
+    .catch((err) => {
+      console.log("Service Worker Error", err);
+    })
+  } else {
+    console.warn("Push messaging is not supported");
+    pushButton.textContent = "Push Not Supported";
+  }
+
+

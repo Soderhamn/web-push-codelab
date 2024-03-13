@@ -20,3 +20,24 @@
 /* eslint-env browser, serviceworker, es6 */
 
 'use strict';
+
+self.addEventListener("push", (event) => {
+    console.log("[Service Worker] Push Received.");
+    console.log(`[Service Worker] Push had this data: "${event.data.text()}"`);
+
+    const title = "Rolf";
+    const options = {
+        body: event.data.text() ? event.data.text() : "You have a new notification.",
+        icon: "images/favicon.png",
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationsclick", (event) => {
+    console.log(`[Service Worker] Notification click received.`);
+
+    event.notification.close();
+
+    event.waitUntil(clients.openWindow("http://127.0.0.1"))
+ });
